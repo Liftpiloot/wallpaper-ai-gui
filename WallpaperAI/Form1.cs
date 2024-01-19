@@ -1,3 +1,6 @@
+using Microsoft.Win32;
+using static WallpaperAI.Properties.Settings;
+
 namespace WallpaperAI
 {
     public partial class Form1 : Form
@@ -5,7 +8,9 @@ namespace WallpaperAI
         public Form1()
         {
             InitializeComponent();
+            runOnStartButton.Checked = Default.run_on_start;
         }
+        
 
         private void label1_Click(object sender, EventArgs e)
         {
@@ -20,60 +25,70 @@ namespace WallpaperAI
         private void runButton_Click(object sender, EventArgs e)
         {
             saveButton.PerformClick();
-            string imageFolder = Properties.Settings.Default.image_folder;
+            string imageFolder = Default.image_folder;
             if (imageFolder == "")
             {
                 MessageBox.Show("Please select a folder to save the images");
                 return;
             }
 
-            string openai_api_key = Properties.Settings.Default.openai_api_key;
-            if (openai_api_key == "")
+            string openaiApiKey = Default.openai_api_key;
+            if (openaiApiKey == "")
             {
-                openai_api_key = openai_api.Text;
-                Properties.Settings.Default.openai_api_key = openai_api_key;
-                Properties.Settings.Default.Save();
+                openaiApiKey = openai_api.Text;
+                Default.openai_api_key = openaiApiKey;
+                Default.Save();
             }
-            string weather_api_key = Properties.Settings.Default.weather_api_key;
-            if (weather_api_key == "")
+            string weatherApiKey = Default.weather_api_key;
+            if (weatherApiKey == "")
             {
-                weather_api_key = weather_api.Text;
-                Properties.Settings.Default.weather_api_key = weather_api_key;
-                Properties.Settings.Default.Save();
+                weatherApiKey = weather_api.Text;
+                Default.weather_api_key = weatherApiKey;
+                Default.Save();
             }
-            if (openai_api_key == "" || weather_api_key == "")
+            if (openaiApiKey == "" || weatherApiKey == "")
             {
                 MessageBox.Show("Please enter your API keys");
                 return;
             }
             Wallpaper wallpaper = new Wallpaper();
-            wallpaper.generateWallpaper(openai_api_key, weather_api_key, imageFolder);
+            wallpaper.GenerateWallpaper(openaiApiKey, weatherApiKey, imageFolder);
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-
+            Default.run_on_start = runOnStartButton.Checked;
+            Default.Save();
+            // start the application on startup if true
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            if (runOnStartButton.Checked)
+            {
+                rk.SetValue("AI Wallpaper", Application.ExecutablePath);
+            }
+            else
+            {
+                rk.DeleteValue("AI Wallpaper", false);
+            }
         }
 
         private void label5_Click(object sender, EventArgs e)
         {
-
         }
 
         private void saveButton_Click(object sender, EventArgs e)
         {
             // save the keys if they are not empty
-            string openai_api_key = openai_api.Text;
-            string weather_api_key = weather_api.Text;
-            if (openai_api_key != "")
+            string openaiApiKey = openai_api.Text;
+            string weatherApiKey = weather_api.Text;
+            if (openaiApiKey != "")
             {
-                Properties.Settings.Default.openai_api_key = openai_api_key;
-                Properties.Settings.Default.Save();
+                Default.openai_api_key = openaiApiKey;
+                Default.Save();
             }
-            if (weather_api_key != "")
+            if (weatherApiKey != "")
             {
-                Properties.Settings.Default.weather_api_key = weather_api_key;
-                Properties.Settings.Default.Save();
+                Default.weather_api_key = weatherApiKey;
+                Default.Save();
             }
         }
 
@@ -83,8 +98,8 @@ namespace WallpaperAI
             if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
             {
                 string folder = folderBrowserDialog.SelectedPath;
-                Properties.Settings.Default.image_folder = folder;
-                Properties.Settings.Default.Save();
+                Default.image_folder = folder;
+                Default.Save();
             }
 
         }

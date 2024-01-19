@@ -174,7 +174,7 @@
         private TextBox weather_api;
         private Label label2;
         private Label label3;
-        private Button runButton;
+        public Button runButton;
         private CheckBox runOnStartButton;
         private Label label4;
         private Label label5;

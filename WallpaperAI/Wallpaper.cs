@@ -20,7 +20,7 @@ namespace WallpaperAI
 {
     internal class Wallpaper
     {
-        public async Task generateWallpaper(string openAiAPI, string weatherAPI, string imageFolder)
+        public async Task GenerateWallpaper(string openAiAPI, string weatherAPI, string imageFolder)
         {
             var (lat, lon) = await GetLocationFromIp();
 
@@ -35,7 +35,6 @@ namespace WallpaperAI
             string response = await generatePrompt(client, location, weather);
 
             string imageUrl = await GenerateImage(api, response, openAiAPI);
-            MessageBox.Show(imageUrl);
 
             setWallpaper(imageUrl, imageFolder);
         }
@@ -61,7 +60,6 @@ namespace WallpaperAI
                 const string url = "https://api.openai.com/v1/images/generations";
                 var response = await httpClient.PostAsync(url, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                Debug.WriteLine(responseContent);
                 if (response.IsSuccessStatusCode)
                 {
                     dynamic ? data = JsonConvert.DeserializeObject(responseContent);
@@ -72,7 +70,7 @@ namespace WallpaperAI
             return "Error";
         }
 
-        public async Task<(double, double)> GetLocationFromIp()
+        private async Task<(double, double)> GetLocationFromIp()
         {
             string ip_address = await new HttpClient().GetStringAsync("https://api.ipify.org");
             string url = $"https://ipapi.co/{ip_address}/latlong/";
@@ -84,7 +82,7 @@ namespace WallpaperAI
             return (double.Parse(latlong[0]), double.Parse(latlong[1]));
         }
 
-        public async Task<string> GetWeather(double lon, double lat, string openweather_api_key)
+        private async Task<string> GetWeather(double lon, double lat, string openweather_api_key)
         {
             string latitude = lat.ToString();
             string longitude = lon.ToString();
@@ -92,7 +90,6 @@ namespace WallpaperAI
             {
                 string url = $"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={openweather_api_key}";
                 using var client = new HttpClient();
-                Debug.WriteLine(url);
                 var response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 var responseBody = await response.Content.ReadAsStringAsync();
@@ -119,11 +116,10 @@ namespace WallpaperAI
             return response.ToString();
         }
 
-        public void setWallpaper(string imageurl, string imageFolder)
+        private void setWallpaper(string imageurl, string imageFolder)
         {
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + ".jpg";
             string path = $"{imageFolder}\\{filename}";
-            Debug.WriteLine(path);
             using (WebClient client = new WebClient())
             {
                 client.DownloadFile(imageurl, path);
@@ -133,7 +129,6 @@ namespace WallpaperAI
             static extern int SystemParametersInfo(
                                     int uAction, int uParam,
                                     string lpvParam, int fuWinIni);
-
 
            SystemParametersInfo(20, 0, path, 1 | 2);
 
