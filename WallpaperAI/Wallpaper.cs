@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,60 +20,56 @@ namespace WallpaperAI
 {
     internal class Wallpaper
     {
-        public async Task generateWallpaper(string openAiAPI, string weatherAPI)
+        public async Task generateWallpaper(string openAiAPI, string weatherAPI, string imageFolder)
         {
             var (lat, lon) = await GetLocationFromIp();
-            MessageBox.Show($"Your location is {lat}, {lon}");
 
             string weather = await GetWeather(lon, lat, weatherAPI);
             WeatherData.Root weatherJson = JsonConvert.DeserializeObject<WeatherData.Root>(weather);
             string city = weatherJson.name;
             string country = weatherJson.sys.country;
             string location = $"{city} in {country}";
-            MessageBox.Show($"Your location is {location}");
 
             OpenAIAPI client = new OpenAIAPI(openAiAPI);
+            var api = new OpenAI_API.OpenAIAPI(openAiAPI);
             string response = await generatePrompt(client, location, weather);
-            MessageBox.Show(response);
 
-            string imageUrl = await generateImage(client, response, openAiAPI);
+            string imageUrl = await GenerateImage(api, response, openAiAPI);
             MessageBox.Show(imageUrl);
 
-            setWallpaper(imageUrl);
+            setWallpaper(imageUrl, imageFolder);
         }
 
-        private async Task<string> generateImage(OpenAIAPI client, string prompt, string openAiAPI)
+        private async Task<string> GenerateImage(OpenAI_API.OpenAIAPI api, string prompt, string openAiAPI)
         {
-            string url = "https://api.openai.com/v1/images/generations";
-            string body = $"{{\"prompt\": \"{prompt}\", \"n\": 1, \"size\": \"1792x1024\", \"model\": \"dall-e-3\", \"quality\": \"standard\"}}";
-
-            var data = Encoding.ASCII.GetBytes(body);
-
-            var request = (HttpWebRequest)WebRequest.Create(url);
-            request.Method = "POST";
-            request.ContentType = "application/json";
-            request.ContentLength = data.Length;
-            request.Headers.Add("Authorization", "Bearer " + openAiAPI);
-            Debug.WriteLine($"Request URL: {url}");
-            Debug.WriteLine($"Request Headers: {request.Headers}");
-            Debug.WriteLine($"Request Body: {body}");
-
-            try
+            using (HttpClient httpClient = new HttpClient())
             {
-                ServicePointManager.ServerCertificateValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-                var response = (HttpWebResponse)request.GetResponse();
-                Debug.WriteLine($"Response Status Code: {response.StatusCode}");
-                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-                Debug.WriteLine($"Response Body: {responseString}");
-                return responseString; 
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}");
-                return ""; // or handle the error in an appropriate way
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type",
+                    "application/json; charset=utf-8");
+                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer "+openAiAPI);
+
+                var requestBody = new
+                {
+                    prompt = prompt,
+                    n = 1,
+                    size = "1792x1024",
+                    model = "dall-e-3"
+                };
+                var jsonBody = JsonConvert.SerializeObject(requestBody);
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                const string url = "https://api.openai.com/v1/images/generations";
+                var response = await httpClient.PostAsync(url, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Debug.WriteLine(responseContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    dynamic ? data = JsonConvert.DeserializeObject(responseContent);
+                    return data?.data[0].url;
+                }
             }
 
-
+            return "Error";
         }
 
         public async Task<(double, double)> GetLocationFromIp()
@@ -122,9 +119,11 @@ namespace WallpaperAI
             return response.ToString();
         }
 
-        public void setWallpaper(string imageurl)
+        public void setWallpaper(string imageurl, string imageFolder)
         {
-            string path = @"C:\Users\Public\Pictures\wallpaper.jpg";
+            string filename = DateTime.Now.ToString("yyyy-MM-dd") + ".jpg";
+            string path = $"{imageFolder}\\{filename}";
+            Debug.WriteLine(path);
             using (WebClient client = new WebClient())
             {
                 client.DownloadFile(imageurl, path);

@@ -38,6 +38,7 @@
             label4 = new Label();
             label5 = new Label();
             saveButton = new Button();
+            folderSelect = new Button();
             SuspendLayout();
             // 
             // label1
@@ -58,10 +59,10 @@
             openai_api.Size = new Size(350, 27);
             openai_api.TabIndex = 1;
             // 
-            // weatherai_api
+            // weather_api
             // 
             weather_api.Location = new Point(324, 184);
-            weather_api.Name = "weatherai_api";
+            weather_api.Name = "weather_api";
             weather_api.Size = new Size(350, 27);
             weather_api.TabIndex = 2;
             // 
@@ -134,11 +135,22 @@
             saveButton.UseVisualStyleBackColor = true;
             saveButton.Click += saveButton_Click;
             // 
+            // folderSelect
+            // 
+            folderSelect.Location = new Point(249, 289);
+            folderSelect.Name = "folderSelect";
+            folderSelect.Size = new Size(202, 29);
+            folderSelect.TabIndex = 10;
+            folderSelect.Text = "Select image save location";
+            folderSelect.UseVisualStyleBackColor = true;
+            folderSelect.Click += folderSelect_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(folderSelect);
             Controls.Add(saveButton);
             Controls.Add(label5);
             Controls.Add(label4);
@@ -167,5 +179,6 @@
         private Label label4;
         private Label label5;
         private Button saveButton;
+        private Button folderSelect;
     }
 }
