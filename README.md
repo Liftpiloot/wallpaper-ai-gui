@@ -36,3 +36,5 @@ Save these keys in the settings form, by right clicking on the tray icon
 This c# application estimates your location using your ip adress. This information is passed to openweather, which returns the current weather information. 
 
 This information is used by gpt 3.5 to create an image generation prompt based on your location and weather situation. Dalle-3 uses this prompt to create a wallpaper that should more or less represent the view in your area. This will sometimes be a photorealistic painting, but may result in a more abstract drawing. 
+
+- Donations: https://www.buymeacoffee.com/liftpiloot
