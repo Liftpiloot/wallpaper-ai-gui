@@ -30,6 +30,7 @@ Save these keys in the settings form, by right clicking on the tray icon
   - Wallpaper AI opens in the background, right click the icon in the tray menu to open the menu
   - To disable run on start, uncheck the option in the settings (closing the app won't disable it)
   - Wallpapers are overwritten if created on the same day, rename or move them to keep them
+  - Generation may take a minute or two, spamming the run button will result in multiple requests running at once
  
 ## about:
 This c# application estimates your location using your ip adress. This information is passed to openweather, which returns the current weather information. 
