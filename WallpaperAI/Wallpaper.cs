@@ -1,75 +1,72 @@
-﻿using Microsoft.Win32;
-using Newtonsoft.Json;
-using OpenAI;
+﻿using Newtonsoft.Json;
 using OpenAI.API;
 using OpenAI.API.Completions;
-using OpenAI.Managers;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using static WallpaperAI.WeatherData;
 
 namespace WallpaperAI
 {
     internal class Wallpaper
     {
-        public async Task GenerateWallpaper(string openAiAPI, string weatherAPI, string imageFolder)
+        /// <summary>
+        /// Main function to generate the wallpaper
+        /// Generates a prompt for the OpenAI API, then generates an image from the prompt
+        /// and sets the image as the wallpaper
+        /// </summary>
+        /// <param name="openAiApi">Api key for openAI</param>
+        /// <param name="weatherApi">Api key for openWeatherMap</param>
+        /// <param name="imageFolder">location to store generated wallpaper</param>
+        public async Task GenerateWallpaper(string openAiApi, string weatherApi, string imageFolder)
         {
             var (lat, lon) = await GetLocationFromIp();
             Debug.WriteLine("location: " + lat + " " + lon);
 
-            string weather = await GetWeather(lat, lon, weatherAPI);
+            string weather = await GetWeather(lat, lon, weatherApi);
             Debug.WriteLine("weather: " + weather);
 
             WeatherData.Root weatherJson = JsonConvert.DeserializeObject<WeatherData.Root>(weather);
+            Debug.Assert(weatherJson != null, nameof(weatherJson) + " != null");
             string city = weatherJson.name;
             string country = weatherJson.sys.country;
             string location = $"{city} in {country}";
 
-            OpenAIAPI client = new OpenAIAPI(openAiAPI);
-            var api = new OpenAI_API.OpenAIAPI(openAiAPI);
-            string response = await generatePrompt(client, location, weather);
+            OpenAIAPI client = new OpenAIAPI(openAiApi);
+            string response = await GeneratePrompt(client, location, weather);
             Debug.WriteLine("prompt: " + response);
 
-            string imageUrl = await GenerateImage(api, response, openAiAPI);
+            string imageUrl = await GenerateImage(response, openAiApi);
             Debug.WriteLine("image: " + imageUrl);
 
-            setWallpaper(imageUrl, imageFolder);
+            SetWallpaper(imageUrl, imageFolder);
         }
-
-        private async Task<string> GenerateImage(OpenAI_API.OpenAIAPI api, string prompt, string openAiAPI)
+        
+        private async Task<string> GenerateImage(string prompt, string openAiApi)
         {
-            using (HttpClient httpClient = new HttpClient())
-            {
-                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type",
-                    "application/json; charset=utf-8");
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer "+openAiAPI);
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type",
+                "application/json; charset=utf-8");
+            httpClient.DefaultRequestHeaders.Add("Authorization", "Bearer "+openAiApi);
 
-                var requestBody = new
-                {
-                    prompt = prompt,
-                    n = 1,
-                    size = "1792x1024",
-                    model = "dall-e-3"
-                };
-                var jsonBody = JsonConvert.SerializeObject(requestBody);
-                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                const string url = "https://api.openai.com/v1/images/generations";
-                var response = await httpClient.PostAsync(url, content);
-                var responseContent = await response.Content.ReadAsStringAsync();
-                if (response.IsSuccessStatusCode)
-                {
-                    dynamic ? data = JsonConvert.DeserializeObject(responseContent);
-                    return data?.data[0].url;
-                }
+            var requestBody = new
+            {
+                prompt,
+                n = 1,
+                size = "1792x1024",
+                model = "dall-e-3"
+            };
+            var jsonBody = JsonConvert.SerializeObject(requestBody);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+            const string url = "https://api.openai.com/v1/images/generations";
+            var response = await httpClient.PostAsync(url, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (response.IsSuccessStatusCode)
+            {
+                dynamic ? data = JsonConvert.DeserializeObject(responseContent);
+                return data?.data[0].url ?? throw new InvalidOperationException();
             }
 
             return "Error";
@@ -77,8 +74,8 @@ namespace WallpaperAI
 
         private async Task<(string, string)> GetLocationFromIp()
         {
-            string ip_address = await new HttpClient().GetStringAsync("https://api.ipify.org");
-            string url = $"https://ipapi.co/{ip_address}/latlong/";
+            string ipAddress = await new HttpClient().GetStringAsync("https://api.ipify.org");
+            string url = $"https://ipapi.co/{ipAddress}/latlong/";
             using var client = new HttpClient();
             var response = await client.GetAsync(url);
             response.EnsureSuccessStatusCode();
@@ -87,11 +84,11 @@ namespace WallpaperAI
             return (latlong[0],latlong[1]);
         }
 
-        private async Task<string> GetWeather(string lat, string lon, string openweather_api_key)
+        private async Task<string> GetWeather(string lat, string lon, string openweatherApiKey)
         {
             try
             {
-                string url = $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={openweather_api_key}";
+                string url = $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={openweatherApiKey}";
                 using var client = new HttpClient();
                 var response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -100,13 +97,13 @@ namespace WallpaperAI
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error: {ex.Message}\n\nDetails: {ex.ToString()}");
+                MessageBox.Show($"Error: {ex.Message}\n\nDetails: {ex}");
                 return ""; // or handle the error in an appropriate way
             }
 
         }
 
-        private async Task<string> generatePrompt(OpenAIAPI client, string location, string weather) {
+        private async Task<string> GeneratePrompt(OpenAIAPI client, string location, string weather) {
        
             var parameters = new CompletionRequest
             {
@@ -119,13 +116,13 @@ namespace WallpaperAI
             return response.ToString();
         }
 
-        private void setWallpaper(string imageurl, string imageFolder)
+        private void SetWallpaper(string imageUrl, string imageFolder)
         {
             string filename = DateTime.Now.ToString("yyyy-MM-dd") + ".jpg";
             string path = $"{imageFolder}\\{filename}";
             using (WebClient client = new WebClient())
             {
-                client.DownloadFile(imageurl, path);
+                client.DownloadFile(imageUrl, path);
             }
 
             [DllImport("user32.dll", CharSet = CharSet.Auto)]
